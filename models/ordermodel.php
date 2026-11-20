@@ -61,8 +61,14 @@ class OrderModel {
     public function delete($id) {
         $this->db->beginTransaction();
         try {
+            $lock = $this->db->prepare("SELECT fld_order_num FROM tbl_orders_a223536 WHERE fld_order_num = ? FOR UPDATE");
+            $lock->execute([$id]);
+            if (!$lock->fetchColumn()) {
+                $this->db->rollBack();
+                return false;
+            }
             $details = $this->db->prepare("DELETE FROM tbl_orders_details_a223536 WHERE fld_order_num = :order_num");
-            $details->bindValue(':order_num', $id, PDO::PARAM_INT);
+            $details->bindValue(':order_num', $id, PDO::PARAM_STR);
             $details->execute();
             $order = $this->db->prepare("DELETE FROM tbl_orders_a223536 WHERE fld_order_num = :order_num");
             $order->bindValue(':order_num', $id, PDO::PARAM_INT);
@@ -70,7 +76,9 @@ class OrderModel {
             $this->db->commit();
             return $result;
         } catch (Throwable $exception) {
-            $this->db->rollBack();
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
             throw $exception;
         }
     }

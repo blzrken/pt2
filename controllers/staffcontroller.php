@@ -13,14 +13,14 @@ class StaffController extends Controller {
     }
 
     public function save() {
-        $data = $_POST;
+        $data = $this->formData();
         $this->model->create($data);
-        $this->index();
+        redirectTo('staffcontroller');
     }
 
     public function edit($id) {
         $astaff = $this->model->readById($id);
-        if (!$astaff) { exit; }
+        if (!$astaff) { abortRequest(404, 'Record not found.'); }
         $this->view("staffs", [
             "astaff" => $astaff,
             "staffs" => $this->model->readAll()
@@ -28,17 +28,27 @@ class StaffController extends Controller {
     }
 
     public function update() {
-        $data = $_POST;
+        $data = $this->formData() + $this->fields(['original_staff_num']);
         $this->model->update($data);
-        $this->index();
+        redirectTo('staffcontroller');
     }
 
     public function delete($id) {
         $astaff = $this->model->readById($id);
-        if (!$astaff) { exit; }
+        if (!$astaff) { abortRequest(404, 'Record not found.'); }
         $this->model->delete($id);
-        $this->index();
+        redirectTo('staffcontroller');
+    }
+
+    private function formData() {
+        $data = $this->fields(['staff_num', 'staff_name', 'staff_phone', 'staff_email']);
+        if (!preg_match('/^[A-Za-z0-9_-]+$/D', $data['staff_num'])) {
+            abortRequest(422, 'Use letters, numbers, underscores or hyphens in the ID.');
+        }
+        if (!filter_var($data['staff_email'], FILTER_VALIDATE_EMAIL)) {
+            abortRequest(422, 'Enter a valid staff email address.');
+        }
+
+        return $data;
     }
 }
-
-?>

@@ -1,21 +1,23 @@
 <?php
 
 class Database {
-    private $connection;
-
-    public function __construct() {
-        try {
-            $this->connection = new PDO("mysql:host=localhost;dbname=a223536", "root", "");
-            $this->connection->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-        } catch (PDOException $e) {
-            echo "Database connection failed: " . $e->getMessage();
-            exit;
-        }
-    }
+    private static $connection;
 
     public function getConnection() {
-        return $this->connection;
+        if (self::$connection === null) {
+            $configFile = __DIR__ . '/database.local.php';
+            $config = is_file($configFile) ? require $configFile : [];
+            $host = $config['host'] ?? (getenv('PT2_DB_HOST') ?: 'localhost');
+            $database = $config['database'] ?? (getenv('PT2_DB_NAME') ?: 'a223536');
+            $username = $config['username'] ?? (getenv('PT2_DB_USER') ?: 'root');
+            $password = $config['password'] ?? (getenv('PT2_DB_PASSWORD') ?: '');
+            $dsn = $config['dsn'] ?? (getenv('PT2_DB_DSN') ?: "mysql:host=$host;dbname=$database;charset=utf8mb4");
+            self::$connection = new PDO($dsn, $username, $password, [
+                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_EMULATE_PREPARES => false,
+            ]);
+        }
+
+        return self::$connection;
     }
 }
-
-?>

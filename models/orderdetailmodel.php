@@ -29,14 +29,30 @@ class OrderDetailModel {
     }
 
     public function create($data) {
-        $sql = "INSERT INTO tbl_orders_details_a223536
-            (fld_order_num, fld_product_num, fld_order_detail_quantity)
-            VALUES (:order_num, :product_num, :quantity)";
-        $stmt = $this->db->prepare($sql);
-        $stmt->bindValue(':order_num', $data['order_num'], PDO::PARAM_INT);
-        $stmt->bindValue(':product_num', $data['product_num'], PDO::PARAM_STR);
-        $stmt->bindValue(':quantity', $data['quantity'], PDO::PARAM_INT);
-        return $stmt->execute();
+        $this->db->beginTransaction();
+        try {
+            $order = $this->db->prepare("SELECT fld_order_num FROM tbl_orders_a223536 WHERE fld_order_num = ? FOR UPDATE");
+            $order->execute([$data['order_num']]);
+            if (!$order->fetchColumn()) {
+                $this->db->rollBack();
+                return false;
+            }
+
+            $sql = "INSERT INTO tbl_orders_details_a223536
+                (fld_order_num, fld_product_num, fld_order_detail_quantity)
+                VALUES (:order_num, :product_num, :quantity)";
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindValue(':order_num', $data['order_num'], PDO::PARAM_STR);
+            $stmt->bindValue(':product_num', $data['product_num'], PDO::PARAM_STR);
+            $stmt->bindValue(':quantity', $data['quantity'], PDO::PARAM_INT);
+            $stmt->execute();
+            return $this->db->commit();
+        } catch (Throwable $exception) {
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+            throw $exception;
+        }
     }
 
     public function update($data) {
