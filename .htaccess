@@ -3,6 +3,9 @@ DirectoryIndex index.php
 RewriteEngine On
 RewriteRule ^(?:core|models|controllers|views|\.git)(?:/|$) - [F,L,NC]
 RewriteRule ^(?:database\.sql|\.gitignore)$ - [F,L,NC]
+# LRGS uses an Apache alias for the student web directory.
+RewriteCond %{REQUEST_URI} ^/users/a223536/pt2/
+RewriteRule ^((?:product|customer|staff|order|orderdetail)controller(?:/[^/]+){0,2})/?$ /users/a223536/pt2/index.php?url=$1 [B,L]
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^(.+)$ index.php?url=$1 [B,L]
